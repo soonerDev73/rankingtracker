@@ -1,0 +1,68 @@
+const dotenv = require("dotenv");
+dotenv.config();
+
+const express = require("express");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+const mongoose = require("mongoose");
+const { client, getGames } = require('cfbd');
+const fetch = require('node-fetch');
+
+const app = express();
+
+app.use(express.json());
+app.use(cors());
+app.use(express.static(__dirname + "/public"));
+
+app.use(bodyParser.urlencoded({ extended: true }));
+app.set("view engine", "ejs");
+
+/*mongoose.connect("mongodb://127.0.0.1:27017/playoff2024", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
+    .then(() => console.log("Connected to DB"))
+    .catch(console.error);
+ */
+
+
+app.get("/teams", async (req, res) => {
+
+   try {
+    // Replace with your actual CFBD API endpoint and API key
+    const response = await fetch('https://api.collegefootballdata.com/games?year=2023&classification=fbs&seasonType=regular', {
+        headers: {
+            'Authorization': 'Bearer NTeZQ4CErxIrHx0k7dGrFUTV09N5WPqirfMv3qtKEjnBXpn9BuntU0s5As3BLRi8'
+        }
+    });
+    const games = await response.json();
+
+
+      // Extract unique FBS team names
+      const fbsTeams = new Set();
+      games.forEach(game => {
+        if (game.homeClassification === 'fbs') fbsTeams.add(game.homeTeam);
+        if (game.awayClassification === 'fbs') fbsTeams.add(game.awayTeam);
+      });
+
+       // Render EJS template with all games and unique teams
+    res.render("teams", {
+      games,
+      fbsTeams: Array.from(fbsTeams)
+    });
+
+
+    // Render the EJS template and pass the fetched data
+   // res.render("teams", {games: games});
+} catch (error) {
+    console.error('Error fetching CFBD data:', error);
+}
+
+      
+
+});
+
+
+
+
+app.listen(3001, () => console.log("Server started on port 3001"));
