@@ -26,41 +26,35 @@ app.set("view engine", "ejs");
  */
 
 
-app.get("/teams", async (req, res) => {
-
-   try {
-    // Replace with your actual CFBD API endpoint and API key
-    const response = await fetch('https://api.collegefootballdata.com/games?year=2023&classification=fbs&seasonType=regular', {
-        headers: {
+    app.get("/teams", async (req, res) => {
+      try {
+        const year = req.query.year || new Date().getFullYear();  // default to current year
+    
+        const response = await fetch(`https://api.collegefootballdata.com/games?year=${year}&classification=fbs&seasonType=regular`, {
+          headers: {
             'Authorization': 'Bearer NTeZQ4CErxIrHx0k7dGrFUTV09N5WPqirfMv3qtKEjnBXpn9BuntU0s5As3BLRi8'
-        }
+          }
+        });
+        const games = await response.json();
+    
+        // Extract unique FBS team names
+        const fbsTeams = new Set();
+        games.forEach(game => {
+          if (game.homeClassification === 'fbs') fbsTeams.add(game.homeTeam);
+          if (game.awayClassification === 'fbs') fbsTeams.add(game.awayTeam);
+        });
+    
+        res.render("teams", {
+          games,
+          fbsTeams: Array.from(fbsTeams),
+          req // so EJS can read req.query.year
+        });
+    
+      } catch (error) {
+        console.error('Error fetching CFBD data:', error);
+      }
     });
-    const games = await response.json();
-
-
-      // Extract unique FBS team names
-      const fbsTeams = new Set();
-      games.forEach(game => {
-        if (game.homeClassification === 'fbs') fbsTeams.add(game.homeTeam);
-        if (game.awayClassification === 'fbs') fbsTeams.add(game.awayTeam);
-      });
-
-       // Render EJS template with all games and unique teams
-    res.render("teams", {
-      games,
-      fbsTeams: Array.from(fbsTeams)
-    });
-
-
-    // Render the EJS template and pass the fetched data
-   // res.render("teams", {games: games});
-} catch (error) {
-    console.error('Error fetching CFBD data:', error);
-}
-
-      
-
-});
+    
 
 
 
